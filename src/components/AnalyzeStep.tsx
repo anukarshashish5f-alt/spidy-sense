@@ -26,8 +26,8 @@ export default function AnalyzeStep({ mediaPreview, mediaFile, mediaType, onComp
     let timer: ReturnType<typeof setInterval> | undefined;
 
     const messages = mediaType === 'video'
-      ? ['Reading video metadata…', 'Sampling video frames…', 'Checking temporal and audio signals…', 'Summarizing observations…']
-      : ['Loading image pixels…', 'Measuring texture and edge patterns…', 'Checking compression and frequency signals…', 'Summarizing observations…'];
+      ? ['Reading video metadata…', 'Sampling video frames…', 'Checking experimental motion and audio signals…', 'Summarizing observations…']
+      : ['Loading the pretrained image classifier…', 'Preparing the image…', 'Running AI-versus-real inference…', 'Preparing the model scores…'];
 
     const run = async () => {
       try {
@@ -44,7 +44,7 @@ export default function AnalyzeStep({ mediaPreview, mediaFile, mediaType, onComp
         if (cancelled) return;
         if (timer) clearInterval(timer);
         setProgress(100);
-        setMessage('Local heuristic analysis complete');
+        setMessage(mediaType === 'image' ? 'Pretrained image model complete' : 'Experimental video analysis complete');
         window.setTimeout(() => {
           if (!cancelled) onComplete(result);
         }, 250);
@@ -95,7 +95,7 @@ export default function AnalyzeStep({ mediaPreview, mediaFile, mediaType, onComp
               </div>
             </div>
           )}
-          {!error && <p className="text-xs leading-relaxed text-gray-500">This page runs handcrafted statistical checks in your browser. It does not call a trained AI detector or a remote inference service.</p>}
+          {!error && <p className="text-xs leading-relaxed text-gray-500">{mediaType === 'image' ? 'Images are analyzed by a pretrained classifier in your browser. The first run downloads model files; scores are not guaranteed probabilities and the model can make mistakes.' : 'Video analysis still uses experimental handcrafted statistics. It does not yet use a trained video-origin detection model, so its result is especially uncertain.'}</p>}
         </div>
       </div>
     </div>
