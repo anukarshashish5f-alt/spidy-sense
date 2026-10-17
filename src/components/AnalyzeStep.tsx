@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { analyzeImage, analyzeVideo, type AnalysisResult } from '@/utils/imageAnalysis';
+import { AlertTriangle, ScanLine } from 'lucide-react';
+import { analyzeImage, analyzeVideo, type AnalysisResult, type MediaType } from '../utils/imageAnalysis';
 
 interface AnalyzeStepProps {
   mediaPreview: string;
   mediaFile: File;
-  mediaType: 'image' | 'video';
+  mediaType: MediaType;
   onComplete: (result: AnalysisResult) => void;
 }
 
@@ -15,197 +16,86 @@ export interface DetectedPattern {
   type: 'artifact' | 'frequency' | 'noise' | 'edge' | 'audio';
 }
 
-const SCAN_MESSAGES_IMAGE = [
-  'Initializing media pattern analysis...',
-  'Computing multi-scale Laplacian noise residuals...',
-  'Running Sobel edge analysis with direction entropy...',
-  'Performing multi-block DCT frequency analysis...',
-  'Extracting Local Binary Pattern texture features...',
-  'Computing 2D spectral power profile...',
-  'Analyzing color histogram and channel correlation...',
-  'Comparing heuristic image signals...',
-  'Compiling pattern analysis report...',
-];
-
-const SCAN_MESSAGES_VIDEO = [
-  'Initializing media pattern analysis...',
-  'Extracting 8 key frames from video...',
-  'Decoding audio track for voice analysis...',
-  'Computing multi-scale Laplacian noise per frame...',
-  'Running Sobel edge and LBP texture analysis...',
-  'Analyzing voice spectral envelope and formant frequencies...',
-  'Extracting pitch contour and speech prosody features...',
-  'Analyzing inter-frame motion vectors and temporal coherence...',
-  'Measuring harmonic structure and recording environment artifacts...',
-  'Comparing video and audio heuristic signals...',
-  'Compiling pattern analysis report...',
-];
-
 export default function AnalyzeStep({ mediaPreview, mediaFile, mediaType, onComplete }: AnalyzeStepProps) {
   const [progress, setProgress] = useState(0);
-  const [messageIndex, setMessageIndex] = useState(0);
-  const [scanComplete, setScanComplete] = useState(false);
-
-  const scanMessages = mediaType === 'video' ? SCAN_MESSAGES_VIDEO : SCAN_MESSAGES_IMAGE;
-  const duration = mediaType === 'video' ? 8000 : 6000;
+  const [message, setMessage] = useState('Preparing local analysis…');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const interval = 50;
-    const steps = duration / interval;
-    let current = 0;
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
 
-    const timer = setInterval(() => {
-      current++;
-      setProgress((current / steps) * 100);
-      setMessageIndex(Math.min(
-        Math.floor((current / steps) * scanMessages.length),
-        scanMessages.length - 1
-      ));
+    const messages = mediaType === 'video'
+      ? ['Reading video metadata…', 'Sampling video frames…', 'Checking temporal and audio signals…', 'Summarizing observations…']
+      : ['Loading image pixels…', 'Measuring texture and edge patterns…', 'Checking compression and frequency signals…', 'Summarizing observations…'];
 
-      if (current >= steps) {
-        clearInterval(timer);
-        setScanComplete(true);
-        const analysis = mediaType === 'video'
-          ? analyzeVideo(mediaFile)
-          : analyzeImage(mediaFile);
-
-        analysis
-          .then((result) => {
-            setTimeout(() => onComplete(result), 600);
-          })
-          .catch(() => {
-            setTimeout(() =>
-              onComplete({
-                patterns: [{
-                  name: 'Analysis Error',
-                  description: `Unable to complete ${mediaType} analysis. Please try a different ${mediaType}.`,
-                  confidence: 0,
-                  type: 'artifact',
-                }],
-                isAI: false,
-                confidence: 0,
-                metrics: {
-                  noiseScore: 0, edgeScore: 0, frequencyScore: 0,
-                  colorScore: 0, symmetryScore: 0, compressionScore: 0,
-                  metadataScore: 0, textureScore: 0, spectralScore: 0,
-                  patchScore: 0, multiScaleScore: 0, overallScore: 0,
-                },
-                mediaType,
-              }), 600);
-          });
+    const run = async () => {
+      try {
+        // Progress describes the work actually being attempted. It is not a model confidence score.
+        setProgress(8);
+        setMessage(messages[0]);
+        timer = setInterval(() => {
+          if (cancelled) return;
+          setProgress((value) => Math.min(value + 7, 92));
+        }, 140);
+        const result = mediaType === 'video'
+          ? await analyzeVideo(mediaFile)
+          : await analyzeImage(mediaFile);
+        if (cancelled) return;
+        if (timer) clearInterval(timer);
+        setProgress(100);
+        setMessage('Local heuristic analysis complete');
+        window.setTimeout(() => {
+          if (!cancelled) onComplete(result);
+        }, 250);
+      } catch (err) {
+        if (timer) clearInterval(timer);
+        if (cancelled) return;
+        setProgress(0);
+        setError(err instanceof Error ? err.message : 'The selected media could not be analyzed.');
       }
-    }, interval);
+    };
 
-    return () => clearInterval(timer);
-  }, [onComplete, mediaFile, mediaType, scanMessages.length, duration]);
+    void run();
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
+  }, [mediaFile, mediaType, onComplete]);
 
   return (
     <div className="animate-fade-in">
-      <div className="relative rounded-2xl overflow-hidden glass p-6 sm:p-8">
-        {/* Media with scan overlay */}
-        <div className="relative rounded-xl overflow-hidden mb-6 bg-black/50">
+      <div className="relative overflow-hidden rounded-2xl glass p-5 sm:p-8">
+        <div className="relative mb-6 overflow-hidden rounded-xl bg-black/40">
           {mediaType === 'image' ? (
-            <img
-              src={mediaPreview}
-              alt="Analyzing"
-              className="w-full max-h-80 object-contain"
-              style={{ filter: scanComplete ? 'none' : 'contrast(1.1) brightness(0.9)' }}
-            />
+            <img src={mediaPreview} alt="Selected image being analyzed" className="mx-auto max-h-80 w-full object-contain" />
           ) : (
-            <video
-              src={mediaPreview}
-              className="w-full max-h-80 object-contain"
-              style={{ filter: scanComplete ? 'none' : 'contrast(1.1) brightness(0.9)' }}
-            />
+            <video src={mediaPreview} controls muted playsInline className="mx-auto max-h-80 w-full object-contain" />
           )}
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-0 right-0 h-px bg-red-400/70 shadow-[0_0_24px_rgba(230,36,41,0.9)]" style={{ top: `${progress}%` }} />
+          </div>
+        </div>
 
-          {/* Scanning line */}
-          {!scanComplete && (
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div
-                className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"
-                style={{
-                  top: `${progress}%`,
-                  boxShadow: '0 0 20px rgba(230, 36, 41, 0.8), 0 0 40px rgba(230, 36, 41, 0.4)',
-                  transition: 'top 0.05s linear',
-                }}
-              />
-              <div
-                className="absolute left-0 right-0 h-16 bg-gradient-to-b from-transparent via-red-500/10 to-transparent"
-                style={{ top: `${progress}%`, transition: 'top 0.05s linear' }}
-              />
-              {/* Grid overlay */}
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                }}
-              />
-            </div>
-          )}
-
-          {/* Corner markers */}
-          {[
-            'top-2 left-2 border-t-2 border-l-2',
-            'top-2 right-2 border-t-2 border-r-2',
-            'bottom-2 left-2 border-b-2 border-l-2',
-            'bottom-2 right-2 border-b-2 border-r-2',
-          ].map((pos, i) => (
-            <div
-              key={i}
-              className={`absolute ${pos} w-6 h-6 border-red-500/60 rounded-sm pointer-events-none`}
-            />
-          ))}
-
-          {scanComplete && (
-            <div className="absolute inset-0 bg-green-500/5 flex items-center justify-center animate-fade-in pointer-events-none">
-              <div className="px-4 py-2 rounded-lg glass-strong text-sm text-green-400 font-semibold">
-                Scan Complete
+        <div className="space-y-3" aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="flex items-center gap-2 text-gray-300"><ScanLine className="h-4 w-4 text-red-400" />{message}</span>
+            <span className="font-mono text-red-300">{progress}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full gradient-spider transition-all duration-150" style={{ width: `${progress}%` }} />
+          </div>
+          {error && (
+            <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-semibold">Analysis could not finish</p>
+                <p className="mt-1 text-amber-100/80">{error}</p>
+                <p className="mt-2 text-amber-100/80">Try another image/video, or use a shorter video in a browser that supports this format.</p>
               </div>
             </div>
           )}
-        </div>
-
-        {/* Progress bar */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400 font-mono">
-              {scanMessages[messageIndex]}
-            </span>
-            <span className="text-red-400 font-mono font-bold">
-              {Math.round(progress)}%
-            </span>
-          </div>
-
-          <div className="h-2 rounded-full bg-white/5 overflow-hidden relative">
-            <div
-              className="h-full gradient-spider rounded-full transition-all duration-75 relative"
-              style={{ width: `${progress}%` }}
-            >
-              <div className="absolute inset-0 shimmer-text opacity-50" />
-            </div>
-          </div>
-
-          {/* Animated dots */}
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-red-500"
-                  style={{
-                    animation: `blink 1s ${i * 0.2}s step-end infinite`,
-                    opacity: scanComplete ? 0.3 : 1,
-                  }}
-                />
-              ))}
-            </div>
-            <span className="text-xs text-gray-600 font-mono">
-              {scanComplete ? 'Analysis finalized' : 'Spidy Sense active...'}
-            </span>
-          </div>
+          {!error && <p className="text-xs leading-relaxed text-gray-500">This page runs handcrafted statistical checks in your browser. It does not call a trained AI detector or a remote inference service.</p>}
         </div>
       </div>
     </div>

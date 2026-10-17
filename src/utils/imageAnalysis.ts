@@ -1007,6 +1007,12 @@ function computeAvgNoiseResidual(gray: Float32Array, w: number, h: number): numb
 }
 
 
+// Browser File objects expose only basic file properties by default; this demo does not parse EXIF/IPTC metadata.
+// Keep this input neutral rather than inferring provenance from filename, size, or extension.
+function analyzeMetadata(_file: File): number {
+  return 0.5;
+}
+
 // ============================================================
 // METRICS COMPUTATION
 // ============================================================
@@ -1244,9 +1250,7 @@ export async function analyzeImage(file: File): Promise<AnalysisResult> {
   metrics.overallScore = Math.round(overallScore * 100);
 
   const isAI = overallScore > 0.5;
-  const distance = Math.abs(overallScore - 0.5);
-  const confidence = Math.round(50 + distance * 110 + (1 - Math.cos(distance * Math.PI)) * 15);
-  const finalConfidence = clamp(confidence, 51, 99);
+  const finalConfidence = Math.round(overallScore * 100);
   const patterns = buildPatterns(metrics, isAI, 'image');
 
   return { patterns, isAI, confidence: finalConfidence, metrics, mediaType: 'image' };
@@ -1476,9 +1480,7 @@ export async function analyzeVideo(file: File): Promise<AnalysisResult> {
   metrics.symmetryScore = temporalPercent;
 
   const isAI = overallScore > 0.5;
-  const distance = Math.abs(overallScore - 0.5);
-  const confidence = Math.round(50 + distance * 110 + (1 - Math.cos(distance * Math.PI)) * 15);
-  const finalConfidence = clamp(confidence, 51, 99);
+  const finalConfidence = Math.round(overallScore * 100);
 
   // Build visual patterns
   const visualPatterns = buildPatterns(metrics, isAI, 'video', temporal.score);
