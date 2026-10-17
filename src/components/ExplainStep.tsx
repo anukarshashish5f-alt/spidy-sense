@@ -6,6 +6,9 @@ interface ExplainStepProps {
   mediaPreview: string;
   mediaType: 'image' | 'video';
   patterns: DetectedPattern[];
+  method?: 'trained-model' | 'heuristic';
+  aiScore?: number;
+  realScore?: number;
 }
 
 const PATTERN_ICONS = {
@@ -24,7 +27,7 @@ const PATTERN_COLORS = {
   audio: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
 } as const;
 
-export default function ExplainStep({ mediaPreview, mediaType, patterns }: ExplainStepProps) {
+export default function ExplainStep({ mediaPreview, mediaType, patterns, method = 'heuristic', aiScore, realScore }: ExplainStepProps) {
   const [visiblePatterns, setVisiblePatterns] = useState(0);
 
   // Reveal the explanation gradually, but never navigate away automatically.
@@ -48,16 +51,16 @@ export default function ExplainStep({ mediaPreview, mediaType, patterns }: Expla
             <AlertTriangle className="h-5 w-5 text-amber-300" />
           </div>
           <div>
-            <h3 className="mb-2 text-lg font-bold text-white">Pattern analysis report</h3>
+            <h3 className="mb-2 text-lg font-bold text-white">{method === 'trained-model' ? 'Trained image model report' : 'Experimental video signal report'}</h3>
             <p className="text-sm leading-relaxed text-gray-400">
-              The browser calculated {patterns.length} feature scores for this {mediaNoun}. The scores describe how this file matched the app's handcrafted statistical rules; they do not prove whether it was made by AI.
+              {method === 'trained-model' ? 'A pretrained image-classification model compared this image with its AI-generated and real-image classes. These model outputs are useful signals, not proof of origin.' : `The browser calculated ${patterns.length} feature scores for this ${mediaNoun} using handcrafted statistical rules. These signals are not a validated way to determine whether a video was AI-generated.`}
             </p>
           </div>
         </div>
         <div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-4">
           <p className="text-sm font-semibold text-white">How to read these results</p>
           <p className="mt-1 text-sm leading-relaxed text-gray-400">
-            High or low values can be caused by image content, camera settings, edits, resizing or compression. These rules have not been validated as an AI detector against a labeled test set. Treat this report as exploratory information, not an authenticity decision.
+            {method === 'trained-model' ? 'The selected model reports imperfect accuracy in its published evaluation and may miss newer generators or misclassify real images. Editing, resizing, screenshots, and compression can also affect results.' : 'High or low values can be caused by scene motion, lighting, compression, camera movement, or audio conditions. These rules have not been validated on a representative labeled video test set. Treat this report as exploratory only.'}
           </p>
         </div>
       </section>
@@ -73,7 +76,7 @@ export default function ExplainStep({ mediaPreview, mediaType, patterns }: Expla
             )}
           </div>
           <p className="mt-3 text-xs leading-relaxed text-gray-500">
-            No highlighted regions are shown because this version does not localize or explain individual pixels as AI-generated.
+            The model evaluates the image as a whole. It does not identify specific pixels as AI-generated.
           </p>
         </div>
 
@@ -122,7 +125,7 @@ export default function ExplainStep({ mediaPreview, mediaType, patterns }: Expla
         </div>
       </div>
 
-      {visiblePatterns >= patterns.length && patterns.length > 0 && (
+      {method !== 'trained-model' && visiblePatterns >= patterns.length && patterns.length > 0 && (
         <section className="glass flex flex-col gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-wider text-gray-500">Average feature score</p>
