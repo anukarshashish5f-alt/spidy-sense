@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import Hero from './Hero';
 import StepIndicator from './StepIndicator';
@@ -17,11 +17,18 @@ export default function DetectionPage() {
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
-  const handleMediaSelected = (file: File, previewUrl: string, type: 'image' | 'video') => {
+  const handleMediaSelected = (file: File | null, previewUrl: string, type: 'image' | 'video') => {
     setMediaFile(file);
     setMediaPreview(previewUrl);
     setMediaType(type);
   };
+
+  // Keep ownership of the object URL here because it is reused across the upload,
+  // analysis and report steps. Revoke the old URL when it is replaced or cleared.
+  useEffect(() => {
+    if (!mediaPreview) return;
+    return () => URL.revokeObjectURL(mediaPreview);
+  }, [mediaPreview]);
 
   const handleAnalyzeComplete = (result: AnalysisResult) => {
     setAnalysisResult(result);
