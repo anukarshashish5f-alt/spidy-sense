@@ -6,7 +6,6 @@ interface ExplainStepProps {
   mediaPreview: string;
   mediaType: 'image' | 'video';
   patterns: DetectedPattern[];
-  onComplete: () => void;
 }
 
 const PATTERN_ICONS = {
@@ -25,17 +24,16 @@ const PATTERN_COLORS = {
   audio: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
 } as const;
 
-export default function ExplainStep({ mediaPreview, mediaType, patterns, onComplete }: ExplainStepProps) {
+export default function ExplainStep({ mediaPreview, mediaType, patterns }: ExplainStepProps) {
   const [visiblePatterns, setVisiblePatterns] = useState(0);
 
+  // Reveal the explanation gradually, but never navigate away automatically.
+  // Visitors should have time to read the report before choosing the final verdict.
   useEffect(() => {
-    if (visiblePatterns < patterns.length) {
-      const timer = window.setTimeout(() => setVisiblePatterns((v) => v + 1), 180);
-      return () => window.clearTimeout(timer);
-    }
-    const timer = window.setTimeout(onComplete, 450);
+    if (visiblePatterns >= patterns.length) return;
+    const timer = window.setTimeout(() => setVisiblePatterns((v) => v + 1), 180);
     return () => window.clearTimeout(timer);
-  }, [visiblePatterns, patterns.length, onComplete]);
+  }, [visiblePatterns, patterns.length]);
 
   const averageSignal = patterns.length
     ? Math.round(patterns.reduce((sum, pattern) => sum + pattern.confidence, 0) / patterns.length)
