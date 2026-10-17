@@ -35,9 +35,6 @@ export default function DetectionPage() {
     setStep(3);
   };
 
-  const handleExplainComplete = () => {
-    setStep(4);
-  };
 
   const reset = () => {
     setStep(0);
@@ -187,7 +184,6 @@ export default function DetectionPage() {
               mediaPreview={mediaPreview}
               mediaType={mediaType}
               patterns={analysisResult?.patterns ?? []}
-              onComplete={handleExplainComplete}
             />
             <div className="mt-8 text-center">
               <button
