@@ -53,8 +53,7 @@ export default function DetectionPage() {
               The <span className="text-red-500">Four-Step</span> Detection Process
             </h2>
             <p className="text-center text-gray-500 mb-14 max-w-2xl mx-auto">
-              From upload to verdict — our system follows a clear, transparent pipeline
-              to determine if an image or video has been AI-generated or manipulated.
+              From upload to report, Spidy Sense measures selected image, video and audio statistics. These heuristic signals cannot confirm whether media is AI-generated or authentic.
             </p>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -62,7 +61,7 @@ export default function DetectionPage() {
                 {
                   num: '01',
                   title: 'Upload',
-                  desc: 'Drag and drop any image or video. Our system accepts all common formats.',
+                  desc: 'Choose a supported image or video file within the size limit shown in the uploader.',
                   icon: '📤',
                 },
                 {
@@ -74,7 +73,7 @@ export default function DetectionPage() {
                 {
                   num: '03',
                   title: 'Explain',
-                  desc: 'We break down exactly what was found in simple, easy-to-understand terms.',
+                  desc: 'Review the measured feature scores and their limitations in plain language.',
                   icon: '📄',
                 },
                 {
@@ -203,7 +202,7 @@ export default function DetectionPage() {
                 Step 4: <span className="text-red-500">Conclusion</span>
               </h2>
               <p className="text-gray-500 text-sm">
-                The final determination based on pattern analysis
+                A cautious summary of the heuristic signals, not proof of origin
               </p>
             </div>
             <ConclusionStep

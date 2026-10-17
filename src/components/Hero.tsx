@@ -27,12 +27,11 @@ export default function Hero({ onStart }: HeroProps) {
         </h1>
 
         <p className="text-xl sm:text-2xl text-gray-300 font-light mb-4 animate-fade-up delay-200">
-          AI Image & Video Detection Platform
+          Image & Video Signal Explorer
         </p>
 
         <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-up delay-300">
-          Upload any image or video and let our advanced pattern recognition system detect
-          possible manipulation signals. Results are heuristic indicators, not definitive proof of a file's origin.
+          Explore image and video statistics in your browser. Spidy Sense uses handcrafted heuristic checks, not a trained AI detector, so its scores are experimental clues rather than proof of a file's origin.
         </p>
 
         {/* CTA Buttons */}
@@ -57,7 +56,7 @@ export default function Hero({ onStart }: HeroProps) {
         <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-2xl mx-auto animate-fade-up delay-700">
           {[
             { value: '4-Step', label: 'Detection Process' },
-            { value: 'Heuristic', label: 'Signal Analysis' },
+            { value: 'Experimental', label: 'Signal Scores' },
             { value: 'Local', label: 'Browser Analysis' },
           ].map((stat, i) => (
             <div key={i} className="glass rounded-xl py-4 px-2 sm:px-6">

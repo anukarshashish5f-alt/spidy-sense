@@ -26,183 +26,117 @@ const PATTERN_COLORS = {
 } as const;
 
 export default function ExplainStep({ mediaPreview, mediaType, patterns, onComplete }: ExplainStepProps) {
-  const [visiblePatterns, setVisiblePatterns] = useState<number>(0);
+  const [visiblePatterns, setVisiblePatterns] = useState(0);
 
   useEffect(() => {
     if (visiblePatterns < patterns.length) {
-      const timer = setTimeout(() => {
-        setVisiblePatterns((v) => v + 1);
-      }, 400);
-      return () => clearTimeout(timer);
-    } else {
-      const timer = setTimeout(onComplete, 800);
-      return () => clearTimeout(timer);
+      const timer = window.setTimeout(() => setVisiblePatterns((v) => v + 1), 180);
+      return () => window.clearTimeout(timer);
     }
+    const timer = window.setTimeout(onComplete, 450);
+    return () => window.clearTimeout(timer);
   }, [visiblePatterns, patterns.length, onComplete]);
 
-  const avgConfidence = patterns.length > 0
-    ? Math.round(patterns.reduce((sum, p) => sum + p.confidence, 0) / patterns.length)
+  const averageSignal = patterns.length
+    ? Math.round(patterns.reduce((sum, pattern) => sum + pattern.confidence, 0) / patterns.length)
     : 0;
-
   const mediaNoun = mediaType === 'video' ? 'video' : 'image';
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Summary */}
-      <div className="glass rounded-2xl p-6">
+      <section className="glass rounded-2xl p-5 sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-6 h-6 text-red-400" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10">
+            <AlertTriangle className="h-5 w-5 text-amber-300" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white mb-2">
-              Pattern Analysis Report
-            </h3>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              Our system scanned this {mediaNoun} across multiple detection layers and
-              found <span className="text-red-400 font-semibold">{patterns.length} key signals</span> that
-              strongly suggest this {mediaNoun} was generated or manipulated by AI. Here's
-              what Spidy Sense's heuristic checks flagged, in plain language:
+            <h3 className="mb-2 text-lg font-bold text-white">Pattern analysis report</h3>
+            <p className="text-sm leading-relaxed text-gray-400">
+              The browser calculated {patterns.length} feature scores for this {mediaNoun}. The scores describe how this file matched the app's handcrafted statistical rules; they do not prove whether it was made by AI.
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Side-by-side: media with heatmap overlay + pattern list */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Media with visualized pattern overlay */}
-        <div className="glass rounded-2xl p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 font-semibold">
-            Pattern Visualization
+        <div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-4">
+          <p className="text-sm font-semibold text-white">How to read these results</p>
+          <p className="mt-1 text-sm leading-relaxed text-gray-400">
+            High or low values can be caused by image content, camera settings, edits, resizing or compression. These rules have not been validated as an AI detector against a labeled test set. Treat this report as exploratory information, not an authenticity decision.
           </p>
-          <div className="relative rounded-xl overflow-hidden bg-black/50">
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="glass rounded-2xl p-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Original media preview</p>
+          <div className="overflow-hidden rounded-xl bg-black/40">
             {mediaType === 'image' ? (
-              <img
-                src={mediaPreview}
-                alt="Pattern visualization"
-                className="w-full max-h-72 object-contain"
-              />
+              <img src={mediaPreview} alt="Original uploaded image" className="max-h-80 w-full object-contain" />
             ) : (
-              <video
-                src={mediaPreview}
-                controls
-                className="w-full max-h-72 object-contain"
-              />
+              <video src={mediaPreview} controls playsInline className="max-h-80 w-full object-contain" />
             )}
-            {/* Heatmap-style overlay */}
-            <div
-              className="absolute inset-0 mix-blend-overlay pointer-events-none"
-              style={{
-                background:
-                  'radial-gradient(circle at 30% 40%, rgba(230,36,41,0.5) 0%, transparent 25%), radial-gradient(circle at 70% 60%, rgba(230,36,41,0.4) 0%, transparent 20%), radial-gradient(circle at 50% 80%, rgba(255,107,53,0.3) 0%, transparent 15%), radial-gradient(circle at 80% 20%, rgba(230,36,41,0.3) 0%, transparent 18%)',
-              }}
-            />
-            {/* Detection boxes */}
-            <div className="absolute top-[15%] left-[20%] w-24 h-24 border-2 border-red-500/60 rounded animate-pulse pointer-events-none" />
-            <div className="absolute bottom-[20%] right-[15%] w-20 h-20 border-2 border-amber-500/60 rounded animate-pulse delay-300 pointer-events-none" />
-            <div className="absolute top-[50%] right-[30%] w-16 h-16 border-2 border-blue-500/50 rounded animate-pulse delay-500 pointer-events-none" />
           </div>
-          <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-red-500/60" />
-              <span>High confidence</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-amber-500/60" />
-              <span>Medium</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-blue-500/60" />
-              <span>Low</span>
-            </div>
-          </div>
+          <p className="mt-3 text-xs leading-relaxed text-gray-500">
+            No highlighted regions are shown because this version does not localize or explain individual pixels as AI-generated.
+          </p>
         </div>
 
-        {/* Pattern list */}
         <div className="space-y-3">
-          {patterns.slice(0, visiblePatterns).map((pattern, i) => {
+          {patterns.slice(0, visiblePatterns).map((pattern, index) => {
             const Icon = PATTERN_ICONS[pattern.type];
             const colorClass = PATTERN_COLORS[pattern.type];
+            const score = Math.max(0, Math.min(100, Math.round(pattern.confidence)));
             return (
-              <div
-                key={i}
-                className="glass rounded-xl p-4 animate-slide-in-right"
-                style={{ animationDelay: `${i * 0.05}s` }}
-              >
+              <article key={`${pattern.name}-${index}`} className="glass rounded-xl p-4 animate-slide-in-right">
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-lg border flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${colorClass}`}>
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-sm font-bold text-white truncate">
-                        {pattern.name}
-                      </h4>
-                      <span className={`text-xs font-mono font-bold ml-2 ${
-                        pattern.confidence > 85 ? 'text-red-400' : pattern.confidence > 70 ? 'text-amber-400' : 'text-blue-400'
-                      }`}>
-                        {pattern.confidence}%
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <h4 className="text-sm font-bold text-white">{pattern.name}</h4>
+                      <span className="shrink-0 font-mono text-xs font-semibold text-gray-300">{score}/100</span>
                     </div>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      {pattern.description}
-                    </p>
-                    {/* Confidence bar */}
-                    <div className="mt-2 h-1 rounded-full bg-white/5 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${
-                          pattern.confidence > 85 ? 'bg-red-500' : pattern.confidence > 70 ? 'bg-amber-500' : 'bg-blue-500'
-                        }`}
-                        style={{ width: `${pattern.confidence}%` }}
-                      />
+                    <p className="text-xs leading-relaxed text-gray-400">{pattern.description}</p>
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-red-500" style={{ width: `${score}%` }} />
                     </div>
+                    <p className="mt-1 text-[11px] text-gray-600">Heuristic feature score, not confidence or probability</p>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
 
           {visiblePatterns < patterns.length && (
-            <div className="glass rounded-xl p-4 flex items-center gap-3">
+            <div className="glass flex items-center gap-3 rounded-xl p-4" aria-live="polite">
               <div className="flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-gray-500"
-                    style={{ animation: `blink 1s ${i * 0.2}s step-end infinite` }}
-                  />
+                {[0, 1, 2].map((index) => (
+                  <span key={index} className="h-2 w-2 animate-pulse rounded-full bg-gray-400" />
                 ))}
               </div>
-              <span className="text-xs text-gray-600 font-mono">Scanning for more patterns...</span>
+              <span className="text-xs text-gray-500">Preparing the next feature score…</span>
+            </div>
+          )}
+          {patterns.length === 0 && (
+            <div className="glass rounded-xl p-5 text-sm text-gray-400">
+              No feature results were returned for this file. Try a different file format.
             </div>
           )}
         </div>
       </div>
 
-      {/* Overall confidence */}
       {visiblePatterns >= patterns.length && patterns.length > 0 && (
-        <div className="glass rounded-2xl p-5 animate-fade-up flex items-center justify-between">
+        <section className="glass flex flex-col gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-              Overall Manipulation Confidence
-            </p>
-            <p className="text-3xl font-black text-white">
-              {avgConfidence}<span className="text-lg text-gray-500">%</span>
+            <p className="text-xs uppercase tracking-wider text-gray-500">Average feature score</p>
+            <p className="mt-1 text-3xl font-black text-white">{averageSignal}<span className="ml-1 text-base font-medium text-gray-500">/100</span></p>
+            <p className="mt-1 max-w-lg text-xs leading-relaxed text-gray-500">
+              This average summarizes the displayed heuristics. It is not an AI-generation probability and is not a substitute for checking provenance or reliable source context.
             </p>
           </div>
-          <div className="w-24 h-24 relative flex items-center justify-center">
-            <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-              <circle
-                cx="50" cy="50" r="42" fill="none" stroke="#e62429" strokeWidth="6"
-                strokeLinecap="round"
-                strokeDasharray={`${(avgConfidence / 100) * 264} 264`}
-                style={{ transition: 'stroke-dasharray 1s ease-out' }}
-              />
-            </svg>
-            <span className="absolute text-sm font-bold text-red-400">AI</span>
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-white/10">
+            <span className="text-sm font-bold text-gray-200">{averageSignal}</span>
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

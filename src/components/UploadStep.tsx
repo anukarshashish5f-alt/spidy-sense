@@ -2,7 +2,7 @@ import { UploadCloud, FileImage, FileVideo, X } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 
 interface UploadStepProps {
-  onMediaSelected: (file: File, previewUrl: string, mediaType: 'image' | 'video') => void;
+  onMediaSelected: (file: File | null, previewUrl: string, mediaType: 'image' | 'video') => void;
 }
 
 export default function UploadStep({ onMediaSelected }: UploadStepProps) {
@@ -53,17 +53,18 @@ export default function UploadStep({ onMediaSelected }: UploadStepProps) {
     [handleFile]
   );
 
-  const clearMedia = () => {
-    if (preview) URL.revokeObjectURL(preview);
+  const clearMedia = (nextType: 'image' | 'video' = acceptedType) => {
+    // DetectionPage owns preview URL cleanup because it reuses the URL across steps.
     setPreview(null);
     setError(null);
     setFileName(null);
     if (inputRef.current) inputRef.current.value = '';
+    onMediaSelected(null, '', nextType);
   };
 
   const switchType = (type: 'image' | 'video') => {
     setAcceptedType(type);
-    clearMedia();
+    clearMedia(type);
   };
 
   return (
