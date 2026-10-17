@@ -23,6 +23,19 @@ npm run dev
 
 The project entry point is `src/main.tsx`. No detector API keys are required. Uploaded media is processed in the browser; the current detector code does not upload the selected media to a server.
 
-## Deploy
+## Hosting with GitHub Pages
 
-Build with `npm run build` and publish the generated `dist/` directory using a static host. If using a different host, follow that platform's Vite deployment instructions.
+This project is configured to deploy directly from GitHub Actions. No Bolt account or Bolt deployment is required.
+
+1. Open the repository's **Settings → Pages**.
+2. Under **Build and deployment**, choose **GitHub Actions** as the source.
+3. Push changes to the `main` branch, or manually run **Deploy Spidy Sense to GitHub Pages** from the Actions tab.
+4. When the workflow succeeds, the public site will be available at:
+
+   https://anukarshashish5f-alt.github.io/spidy-sense/
+
+The deployment workflow installs dependencies, type-checks the project, builds the static site, and publishes the `dist/` directory.
+
+## Current limitations
+
+This is a frontend demo. The heuristic scores are not validated AI-generation probabilities. There is no connected trained detector, account system, payment checkout, or public inference API.
