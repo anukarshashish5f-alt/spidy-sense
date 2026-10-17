@@ -184,6 +184,9 @@ export default function DetectionPage() {
               mediaPreview={mediaPreview}
               mediaType={mediaType}
               patterns={analysisResult?.patterns ?? []}
+              method={analysisResult?.method}
+              aiScore={analysisResult?.aiScore}
+              realScore={analysisResult?.realScore}
             />
             <div className="mt-8 text-center">
               <button
@@ -205,12 +208,16 @@ export default function DetectionPage() {
                 Step 4: <span className="text-red-500">Conclusion</span>
               </h2>
               <p className="text-gray-500 text-sm">
-                A cautious summary of the heuristic signals, not proof of origin
+                An evidence-based estimate with clear limits, not proof of origin
               </p>
             </div>
             <ConclusionStep
               isAI={analysisResult?.isAI ?? false}
               confidence={analysisResult?.confidence ?? 0}
+              verdict={analysisResult?.verdict}
+              method={analysisResult?.method}
+              aiScore={analysisResult?.aiScore}
+              realScore={analysisResult?.realScore}
               mediaType={mediaType}
               onReset={reset}
             />
