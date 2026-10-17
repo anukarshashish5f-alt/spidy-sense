@@ -1440,6 +1440,7 @@ export async function analyzeVideo(file: File): Promise<AnalysisResult> {
     textureScore: avg('textureScore'),
     spectralScore: avg('spectralScore'),
     patchScore: avg('patchScore'),
+    multiScaleScore: avg('multiScaleScore'),
     overallScore: 0,
   };
 
