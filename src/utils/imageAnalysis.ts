@@ -1,5 +1,6 @@
 import type { DetectedPattern } from '../components/AnalyzeStep';
 import { analyzeAudio, type AudioMetrics, type AudioPattern } from './audioAnalysis';
+import { detectAiImage } from './aiImageDetector';
 
 export type MediaType = 'image' | 'video';
 
@@ -7,7 +8,11 @@ export interface AnalysisResult {
   patterns: DetectedPattern[];
   isAI: boolean;
   confidence: number;
-  metrics: ImageMetrics;
+  verdict?: 'ai' | 'real' | 'uncertain';
+  method?: 'trained-model' | 'heuristic';
+  aiScore?: number;
+  realScore?: number;
+  metrics?: ImageMetrics;
   mediaType: MediaType;
   audioMetrics?: AudioMetrics;
   hasAudio?: boolean;
@@ -1244,16 +1249,40 @@ function buildPatterns(
 // PUBLIC API — IMAGE
 // ============================================================
 export async function analyzeImage(file: File): Promise<AnalysisResult> {
-  const { data, width, height } = await loadImageDataFromFile(file);
-  const metrics = computeMetrics(data, width, height, file);
-  const overallScore = ensembleScore(metrics);
-  metrics.overallScore = Math.round(overallScore * 100);
+  // Image verdicts come from a pretrained classifier, not handcrafted
+  // pixel-statistic thresholds. Its output is not a calibrated probability.
+  const scores = await detectAiImage(file);
+  const aiScore = Math.round(scores.ai * 100);
+  const realScore = Math.round(scores.real * 100);
+  const verdict: AnalysisResult['verdict'] =
+    scores.ai >= 0.7 ? 'ai' : scores.real >= 0.7 ? 'real' : 'uncertain';
+  const isAI = scores.ai > scores.real;
 
-  const isAI = overallScore > 0.5;
-  const finalConfidence = Math.round(overallScore * 100);
-  const patterns = buildPatterns(metrics, isAI, 'image');
+  const patterns: DetectedPattern[] = [
+    {
+      name: 'Trained model: AI-generated signal',
+      description: 'Output score from a pretrained image classifier trained to distinguish AI-generated images from real images. This is not a calibrated real-world probability and can be wrong, especially on newer generators or edited/compressed files.',
+      confidence: aiScore,
+      type: 'artifact',
+    },
+    {
+      name: 'Trained model: real-image signal',
+      description: 'Output score for the model’s real-image class. A high score is not proof of authenticity; synthetic images can be missed and real photographs can be falsely flagged.',
+      confidence: realScore,
+      type: 'artifact',
+    },
+  ];
 
-  return { patterns, isAI, confidence: finalConfidence, metrics, mediaType: 'image' };
+  return {
+    patterns,
+    isAI,
+    confidence: aiScore,
+    verdict,
+    method: 'trained-model',
+    aiScore,
+    realScore,
+    mediaType: 'image',
+  };
 }
 
 // ============================================================
@@ -1503,6 +1532,8 @@ export async function analyzeVideo(file: File): Promise<AnalysisResult> {
     patterns: allPatterns,
     isAI,
     confidence: finalConfidence,
+    verdict: 'uncertain',
+    method: 'heuristic',
     metrics,
     mediaType: 'video',
     audioMetrics: audioResult.hasAudio ? audioResult.metrics : undefined,
